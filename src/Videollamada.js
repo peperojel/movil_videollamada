@@ -15,7 +15,7 @@ import {
   rtcView,
   text
 } from './styles';
-import VideoCall from './utils/simple-peer';
+import VideoCall from './utils/videocall';
 
 
 YellowBox.ignoreWarnings(['Setting a timer', 'Unrecognized WebSocket connection', 'ListView is deprecated and will be removed']);

@@ -1,4 +1,4 @@
-import Peer from 'simple-peer'
+import Peer from './simple-peer/simple-peer'
 
 export default class VideoCall {
     peer = null 
@@ -9,6 +9,7 @@ export default class VideoCall {
             trickle: false,
             reconnectTimer: 1000,
             iceTransportPolicy: 'relay',
+            channelConfig: {},
             config: {
                 iceServers: [
                     { urls: 'stun:stun4.l.google.com:19302' },
