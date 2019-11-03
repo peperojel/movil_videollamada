@@ -15,7 +15,7 @@ import {
   rtcView,
   text
 } from './styles';
-// import VideoCall from './utils/simple-peer';
+import VideoCall from './utils/simple-peer';
 
 
 YellowBox.ignoreWarnings(['Setting a timer', 'Unrecognized WebSocket connection', 'ListView is deprecated and will be removed']);
@@ -46,13 +46,13 @@ class Videollamada extends Component {
     this.signalHandler = this.signalHandler.bind(this);
   }
 
-  // videoCall = new VideoCall()
+  videoCall = new VideoCall()
   
   componentDidMount() {
     this.props.screenProps.socket.setHandler(this.signalHandler)
-    room = getSubscription(this.props.screenProps.socket, this.props.screenProps.socket.topic)
-    this.getReady()
+    room = getSubscription(this.props.screenProps.socket, this.props.screenProps.socket.topic)    
     this.getLocalStream().then( () => {
+      this.getReady();
       room.emit('message', {
         type: 'asesoria:ready',
         data: ''
@@ -107,27 +107,27 @@ class Videollamada extends Component {
   };
   
   getReady = () => {
-    // this.setState({ connecting: true })
-    // const peer = this.videoCall.init(
-    //   this.state.localStream,
-    //   this.state.initiator
-    // )
-    // this.setState({peer})
-    // // TODO: Se debe adaptar a la nueva lógica del WebSocket
-    // peer.on('signal', data => {
-    // room.emit('message', {
-    //     type: 'asesoria:signaling',
-    //     data: data
-    //   });
-    // });
+    this.setState({ connecting: true })
+    const peer = this.videoCall.init(
+      this.state.localStream,
+      this.state.initiator
+    )
+    this.setState({peer})
+    // TODO: Se debe adaptar a la nueva lógica del WebSocket
+    peer.on('signal', data => {
+    room.emit('message', {
+        type: 'asesoria:signaling',
+        data: data
+      });
+    });
 
-    // peer.on('stream', stream => {
-    //   this.setState({remoteStreamUrl: stream.toURL(), connecting: false, waiting: false});
-    // })
+    peer.on('stream', stream => {
+      this.setState({remoteStreamUrl: stream.toURL(), connecting: false, waiting: false});
+    })
 
-    // peer.on('error', function(err) {
-    //   console.log(err)
-    // })
+    peer.on('error', function(err) {
+      console.log(err)
+    })
   }
 
 
