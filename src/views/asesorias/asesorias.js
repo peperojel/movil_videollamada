@@ -6,7 +6,7 @@ import { ScrollView } from 'react-native-gesture-handler';
 
 //TODO: Cuando se haga el fetch desde el back se debe rescatar la asesoria_id del respectivo médico
 let room = null;
-const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjEsImlhdCI6MTU3MjczNjAwNn0.YP46YAJCVHpx5RYnJ4xxDv3WqfbNZbL1t4ty39SBNUk'
+const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjQyLCJpYXQiOjE1NzI4MzMxMjN9.KKYvZ6mjkLero0gI-Huy3dEkFCZeSU9S0mUl2nWm8Dg'
 const agendada = [
     {
         name: '<Fecha>',

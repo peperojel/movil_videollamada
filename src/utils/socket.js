@@ -13,7 +13,7 @@ export default class SocketConnection {
 
   connect (token) {
     //TODO: Darle la URL a traves de un .env
-    this.ws = Ws("ws://10.112.19.91:3333")
+    this.ws = Ws("wss://meditel-testing.herokuapp.com")
     .withApiToken(token)
       .connect();
 
