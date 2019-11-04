@@ -13,7 +13,7 @@ export default class SocketConnection {
 
   connect (token) {
     //TODO: Darle la URL a traves de un .env
-    this.ws = Ws("ws://192.168.1.84:3333")
+    this.ws = Ws("ws://10.112.19.91:3333")
     .withApiToken(token)
       .connect();
 

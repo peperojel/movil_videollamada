@@ -15,16 +15,14 @@ import {
   rtcView,
   text
 } from './styles';
-import VideoCall from './utils/videocall';
 
+import VideoCall from './utils/videocall';
 
 YellowBox.ignoreWarnings(['Setting a timer', 'Unrecognized WebSocket connection', 'ListView is deprecated and will be removed']);
 
 /* ==============================
  Global variables
  ================================ */
-let pcPeers = {};
-let appClass;
 let room = null;
 /* ==============================
  Class
@@ -61,20 +59,20 @@ class Videollamada extends Component {
   }
   
   componentWillUnmount() {
-    console.log("Se va a desmontar la videollamada")
+    // console.log("Se va a desmontar la videollamada")
   }
 
   signalHandler ( message ) {
     const {type, data} = message
     switch (type) {
         case 'asesoria:ready' :
-          //this.getReady();
+          break;
         case 'asesoria:signaling':
           this.state.peer.signal(data)
           break;
         default:
           console.log("Default case")
-        break;
+          break;
       }
   }
 
@@ -100,11 +98,7 @@ class Videollamada extends Component {
     });
   }
 
-  switchCamera = () => {
-    this.state.localStream.getVideoTracks().forEach(track => {
-      track._switchCamera();
-    });
-  };
+ 
   
   getReady = () => {
     this.setState({ connecting: true })
@@ -113,7 +107,6 @@ class Videollamada extends Component {
       this.state.initiator
     )
     this.setState({peer})
-    // TODO: Se debe adaptar a la nueva lógica del WebSocket
     peer.on('signal', data => {
     room.emit('message', {
         type: 'asesoria:signaling',
@@ -130,23 +123,17 @@ class Videollamada extends Component {
     })
   }
 
-
-
-
-  // onPress = () => {
-  //   this.setState({
-  //     status: 'connect',
-  //     info: 'Connecting',
+  // switchCamera = () => {
+  //   this.state.localStream.getVideoTracks().forEach(track => {
+  //     track._switchCamera();
   //   });
-    
-  //   join(this.state.roomID);
   // };
-  
-  button = (func, text) => (
-    <TouchableOpacity style={button.container} onPress={func}>
-      <Text style={button.style}>{text}</Text>
-    </TouchableOpacity>
-  );
+
+  // button = (func, text) => (
+  //   <TouchableOpacity style={button.container} onPress={func}>
+  //     <Text style={button.style}>{text}</Text>
+  //   </TouchableOpacity>
+  // );
   
   render() {
     return (

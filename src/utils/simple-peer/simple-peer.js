@@ -36,11 +36,11 @@ export default class Peer extends stream.Duplex {
 
     super(opts)
 
-    this._id = RNRandomBytes.randomBytes(4, (err, bytes) => {return bytes}).toString('hex').slice(0, 7)
-    //this._debug('new peer %o', opts)
+    this._id = RNRandomBytes.randomBytes(4, (err, bytes) => {return bytes.toString('hex').slice(0,7)})
+    console.log('new peer %o', opts)
 
     this.channelName = opts.initiator
-      ? opts.channelName || RNRandomBytes.randomBytes(20, (err, bytes) => {return bytes}).toString('hex')
+      ? opts.channelName || RNRandomBytes.randomBytes(20, (err, bytes) => {return bytes.toString('hex')})
       : null
 
     this.initiator = opts.initiator || false
@@ -143,10 +143,13 @@ export default class Peer extends stream.Duplex {
         this.addStream(stream)
       })
     }
-    this._pc.ontrack = event => {
-      this._onTrack(event)
-    }
+    // this._pc.ontrack = event => {
+    //   this._onTrack(event)
+    // }
 
+    this._pc.onaddstream = event => {
+      this._onStream(event)
+    }
     if (this.initiator) {
       this._needsNegotiation()
     }
@@ -180,14 +183,14 @@ export default class Peer extends stream.Duplex {
         data = {}
       }
     }
-    //this._debug('signal()')
+    console.log('signal()')
 
     if (data.renegotiate && this.initiator) {
-      //this._debug('got request to renegotiate')
+      console.log('got request to renegotiate')
       this._needsNegotiation()
     }
     if (data.transceiverRequest && this.initiator) {
-      //this._debug('got request for transceiver')
+      console.log('got request for transceiver')
       this.addTransceiver(data.transceiverRequest.kind, data.transceiverRequest.init)
     }
     if (data.candidate) {
@@ -244,7 +247,7 @@ export default class Peer extends stream.Duplex {
    * @param {Object} init
    */
   addTransceiver (kind, init) {
-    //this._debug('addTransceiver()')
+    console.log('addTransceiver()')
 
     if (this.initiator) {
       try {
@@ -265,7 +268,7 @@ export default class Peer extends stream.Duplex {
    * @param {MediaStream} stream
    */
   addStream (stream) {
-    //this._debug('addStream()')
+    console.log('addStream()')
 
     stream.getTracks().forEach(track => {
       this.addTrack(track, stream)
@@ -278,12 +281,12 @@ export default class Peer extends stream.Duplex {
    * @param {MediaStream} stream
    */
   addTrack (track, stream) {
-    //this._debug('addTrack()')
+    console.log('addTrack()')
 
     var submap = this._senderMap.get(track) || new Map() // nested Maps map [track, stream] to sender
     var sender = submap.get(stream)
     if (!sender) {
-      sender = this._pc.addTrack(track, stream)
+      sender = this._pc.addStream(stream)
       submap.set(stream, sender)
       this._senderMap.set(track, submap)
       this._needsNegotiation()
@@ -301,7 +304,7 @@ export default class Peer extends stream.Duplex {
    * @param {MediaStream} stream
    */
   replaceTrack (oldTrack, newTrack, stream) {
-    //this._debug('replaceTrack()')
+    console.log('replaceTrack()')
 
     var submap = this._senderMap.get(oldTrack)
     var sender = submap ? submap.get(stream) : null
@@ -323,7 +326,7 @@ export default class Peer extends stream.Duplex {
    * @param {MediaStream} stream
    */
   removeTrack (track, stream) {
-    //this._debug('removeSender()')
+    console.log('removeSender()')
 
     var submap = this._senderMap.get(track)
     var sender = submap ? submap.get(stream) : null
@@ -348,7 +351,7 @@ export default class Peer extends stream.Duplex {
    * @param {MediaStream} stream
    */
   removeStream (stream) {
-    //this._debug('removeSenders()')
+    console.log('removeSenders()')
 
     stream.getTracks().forEach(track => {
       this.removeTrack(track, stream)
@@ -356,12 +359,12 @@ export default class Peer extends stream.Duplex {
   }
 
   _needsNegotiation () {
-    //this._debug('_needsNegotiation')
+    console.log('_needsNegotiation')
     if (this._batchedNegotiation) return // batch synchronous renegotiations
     this._batchedNegotiation = true
     queueMicrotask(() => {
       this._batchedNegotiation = false
-      //this._debug('starting batched negotiation')
+      console.log('starting batched negotiation')
       this.negotiate()
     })
   }
@@ -370,16 +373,16 @@ export default class Peer extends stream.Duplex {
     if (this.initiator) {
       if (this._isNegotiating) {
         this._queuedNegotiation = true
-        //this._debug('already negotiating, queueing')
+        console.log('already negotiating, queueing')
       } else {
-        //this._debug('start negotiation')
+        console.log('start negotiation')
         setTimeout(() => { // HACK: Chrome crashes if we immediately call createOffer
           this._createOffer()
         }, 0)
       }
     } else {
       if (!this._isNegotiating) {
-        //this._debug('requesting negotiation from initiator')
+        console.log('requesting negotiation from initiator')
         this.emit('signal', { // request initiator to renegotiate
           renegotiate: true
         })
@@ -398,7 +401,7 @@ export default class Peer extends stream.Duplex {
   _destroy (err, cb) {
     if (this.destroyed) return
 
-    //this._debug('destroy (error: %s)', err && (err.message || err))
+    console.log('destroy (error: %s)', err && (err.message || err))
 
     this.readable = this.writable = false
 
@@ -443,7 +446,7 @@ export default class Peer extends stream.Duplex {
       this._pc.onicegatheringstatechange = null
       this._pc.onsignalingstatechange = null
       this._pc.onicecandidate = null
-      this._pc.ontrack = null
+      this._pc.onaddstream = null
       this._pc.ondatachannel = null
     }
     this._pc = null
@@ -512,13 +515,13 @@ export default class Peer extends stream.Duplex {
         return this.destroy(makeError(err, 'ERR_DATA_CHANNEL'))
       }
       if (this._channel.bufferedAmount > MAX_BUFFERED_AMOUNT) {
-        //this._debug('start backpressure: bufferedAmount %d', this._channel.bufferedAmount)
+        console.log('start backpressure: bufferedAmount %d', this._channel.bufferedAmount)
         this._cb = cb
       } else {
         cb(null)
       }
     } else {
-      //this._debug('write before connect')
+      console.log('write before connect')
       this._chunk = chunk
       this._cb = cb
     }
@@ -545,11 +548,11 @@ export default class Peer extends stream.Duplex {
   _startIceCompleteTimeout () {
     if (this.destroyed) return
     if (this._iceCompleteTimer) return
-    //this._debug('started iceComplete timeout')
+    console.log('started iceComplete timeout')
     this._iceCompleteTimer = setTimeout(() => {
       if (!this._iceComplete) {
         this._iceComplete = true
-        //this._debug('iceComplete timeout completed')
+        console.log('iceComplete timeout completed')
         this.emit('iceTimeout')
         this.emit('_iceComplete')
       }
@@ -568,7 +571,7 @@ export default class Peer extends stream.Duplex {
         const sendOffer = () => {
           if (this.destroyed) return
           var signal = this._pc.localDescription || offer
-          //this._debug('signal')
+          console.log('signal')
           this.emit('signal', {
             type: signal.type,
             sdp: signal.sdp
@@ -576,7 +579,7 @@ export default class Peer extends stream.Duplex {
         }
 
         const onSuccess = () => {
-          //this._debug('createOffer success')
+          console.log('createOffer success')
           if (this.destroyed) return
           if (this.trickle || this._iceComplete) sendOffer()
           else this.once('_iceComplete', sendOffer) // wait for candidates
@@ -618,7 +621,7 @@ export default class Peer extends stream.Duplex {
         const sendAnswer = () => {
           if (this.destroyed) return
           var signal = this._pc.localDescription || answer
-          //this._debug('signal')
+          console.log('signal')
           this.emit('signal', {
             type: signal.type,
             sdp: signal.sdp
@@ -650,11 +653,11 @@ export default class Peer extends stream.Duplex {
     var iceConnectionState = this._pc.iceConnectionState
     var iceGatheringState = this._pc.iceGatheringState
 
-    // this._debug(
-    //   'iceStateChange (connection: %s) (gathering: %s)',
-    //   iceConnectionState,
-    //   iceGatheringState
-    // )
+    console.log(
+      'iceStateChange (connection: %s) (gathering: %s)',
+      iceConnectionState,
+      iceGatheringState
+    )
     this.emit('iceStateChange', iceConnectionState, iceGatheringState)
 
     if (iceConnectionState === 'connected' || iceConnectionState === 'completed') {
@@ -729,7 +732,7 @@ export default class Peer extends stream.Duplex {
   }
 
   _maybeReady () {
-    //this._debug('maybeReady pc %s channel %s', this._pcReady, this._channelReady)
+    console.log('maybeReady pc %s channel %s', this._pcReady, this._channelReady)
     if (this._connected || this._connecting || !this._pcReady || !this._channelReady) return
 
     this._connecting = true
@@ -806,10 +809,10 @@ export default class Peer extends stream.Duplex {
             this.remoteFamily = this.remoteAddress.includes(':') ? 'IPv6' : 'IPv4'
           }
 
-          // this._debug(
-          //   'connect local: %s:%s remote: %s:%s',
-          //   this.localAddress, this.localPort, this.remoteAddress, this.remotePort
-          // )
+          console.log(
+            'connect local: %s:%s remote: %s:%s',
+            this.localAddress, this.localPort, this.remoteAddress, this.remotePort
+          )
         }
 
         items.forEach(item => {
@@ -844,7 +847,7 @@ export default class Peer extends stream.Duplex {
             return this.destroy(makeError(err, 'ERR_DATA_CHANNEL'))
           }
           this._chunk = null
-          //this._debug('sent chunk from "write before connect"')
+          console.log('sent chunk from "write before connect"')
 
           var cb = this._cb
           this._cb = null
@@ -858,7 +861,7 @@ export default class Peer extends stream.Duplex {
           if (this._interval.unref) this._interval.unref()
         }
 
-        //this._debug('connect')
+        console.log('connect')
         this.emit('connect')
       })
     }
@@ -879,7 +882,7 @@ export default class Peer extends stream.Duplex {
       this._isNegotiating = false
 
       // HACK: Firefox doesn't yet support removing tracks when signalingState !== 'stable'
-      //this._debug('flushing sender queue', this._sendersAwaitingStable)
+      console.log('flushing sender queue', this._sendersAwaitingStable)
       this._sendersAwaitingStable.forEach(sender => {
         this._pc.removeTrack(sender)
         this._queuedNegotiation = true
@@ -887,17 +890,17 @@ export default class Peer extends stream.Duplex {
       this._sendersAwaitingStable = []
 
       if (this._queuedNegotiation) {
-        //this._debug('flushing negotiation queue')
+        console.log('flushing negotiation queue')
         this._queuedNegotiation = false
         this._needsNegotiation() // negotiate again
       }
 
-      //this._debug('negotiate')
+      console.log('negotiate')
       this.emit('negotiate')
     }
     this._firstStable = false
 
-    //this._debug('signalingStateChange %s', this._pc.signalingState)
+    console.log('signalingStateChange %s', this._pc.signalingState)
     this.emit('signalingStateChange', this._pc.signalingState)
   }
 
@@ -930,7 +933,7 @@ export default class Peer extends stream.Duplex {
 
   _onChannelBufferedAmountLow () {
     if (this.destroyed || !this._cb) return
-    //this._debug('ending backpressure: bufferedAmount %d', this._channel.bufferedAmount)
+    console.log('ending backpressure: bufferedAmount %d', this._channel.bufferedAmount)
     var cb = this._cb
     this._cb = null
     cb(null)
@@ -938,37 +941,28 @@ export default class Peer extends stream.Duplex {
 
   _onChannelOpen () {
     if (this._connected || this.destroyed) return
-    //this._debug('on channel open')
+    console.log('on channel open')
     this._channelReady = true
     this._maybeReady()
   }
 
   _onChannelClose () {
     if (this.destroyed) return
-    //this._debug('on channel close')
+    console.log('on channel close')
     this.destroy()
   }
 
-  _onTrack (event) {
+  _onStream (event) {
     if (this.destroyed) return
 
-    event.streams.forEach(eventStream => {
-      //this._debug('on track')
-      this.emit('track', event.track, eventStream)
+    if (this._remoteStreams.some( remoteStream => {
+      return remoteStream.id === event.stream.id
+    })) return;
 
-      this._remoteTracks.push({
-        track: event.track,
-        stream: eventStream
-      })
+    this._remoteStreams.push(event.stream)
 
-      if (this._remoteStreams.some(remoteStream => {
-        return remoteStream.id === eventStream.id
-      })) return // Only fire one 'stream' event, even though there may be multiple tracks per stream
-
-      this._remoteStreams.push(eventStream)
-      queueMicrotask(() => {
-        this.emit('stream', eventStream) // ensure all tracks have been added
-      })
-    })
+    queueMicrotask(() => {
+      this.emit('stream', event.stream)
+    });
   }
 }
